@@ -6,7 +6,7 @@ For example, the Apache config file has to be adjusted almost every update.
 Also, you need to maintain the repositories separately in apt if new releases come in, and, on Debian, updates are comparably late.
 Because of this, I want to change to a manual install that is not maintained by the package manager.
 
-However, after some discussion with friends, I came to the conclusion, that not only an upgrade and the change to a manual installation is in order, but also a change to Nextcloud.
+However, after some discussion with friends, I came to the conclusion that not only an upgrade and the change to a manual installation is in order, but also a change to Nextcloud.
 The reasons for the change are:
 
 * Faster development
@@ -16,7 +16,7 @@ The reasons for the change are:
 * Features like ActiveSync and Outlook integration
 
 I am aware that not all of these are hard facts.
-Still, AS is one of the most important arguments to me, because it enables my users to sync with the application without needing to resort to \*DAV adapters.
+Still, AS is one of the most important arguments to me because it enables my users to sync with the application without needing to resort to \*DAV adapters.
 
 [The process to change to Nextcloud appears to be straight-forward.](https://nextcloud.com/migration/)
 First I need to upgrade to ownCloud 8.2, then switch over to Nextcloud 9.0, then upgrade Nextcloud itself.
@@ -43,7 +43,7 @@ I use this opportunity to move the ownCloud repository information out of my cur
 I also finally disable the Debian Wheezy sources I somehow forgot to remove.
 Sloppy me.
 
-Afterwards, I am really unhappy with the result, as apt now offers only the latest release of ownCloud which is 9.1.4.
+Afterwards, I am really unhappy with the result, as apt now offers only the latest release of ownCloud, which is 9.1.4.
 To get there, it is recommended to upgrade to 8.2 and 9.0 first, which I now cannot do using the apt package manager.
 So I revert to the repository on opensuse.org using [opensuse's ownCloud 8.1 release channel page](http://software.opensuse.org/download/package?project=isv:ownCloud:community:8.1&package=owncloud).
 While it seems pointless to download the GPG key for the repository via http, I still do it because it makes a man-in-the-middle at least more difficult.
@@ -51,7 +51,7 @@ Now apt shows me the correct packages to update and I can continue.
 
 #### 2.2 Installing the upgrade to 8.1.12
 
-After changing repository, I get offered version 8.1.12 which is more recent than I was offered before.
+After changing repository, I am offered version 8.1.12, which is more recent than I was offered before.
 Yay, the effort of changing repository shows first advantages aside from the disappeared messages regarding untrusted repositories.
 
 #### 2.3 Upgrade aftermath
@@ -69,7 +69,7 @@ All the data is there, all the functionality is there, it appears to have gone w
 Same as before: Add the proper repository, backup, upgrade, check functionality and data.
 I add the [ownCloud 8.2 repository](https://download.owncloud.org/download/repositories/8.2/owncloud/) and its key and update apt's repositories.
 The ownCloud package shows now 8.2.10 as most recent version and offers the upgrade.
-I backup all files like I did last time, and start the upgrade via apt.
+I backup all files like I did the last time, and start the upgrade via apt.
 Afterwards, while ownCloud is in maintenance mode, I check the status with the command line tool and perform `occ upgrade`.
 After enabling the apps again and disabling maintenance mode, I check all functionality and make another backup, just in case.
 
