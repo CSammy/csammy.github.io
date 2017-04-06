@@ -1,3 +1,132 @@
+## 2017-04-02 - Installing seafile on a Raspberry Pi with raspbian
+
+```
+$ uname -a
+Linux raspberrypi 4.4.50-v7+ #970 SMP Mon Feb 20 19:18:29 GMT 2017 armv7l GNU/Linux
+```
+
+1. Create a working place for yourself. `mkdir -p /srv/seafile/installed`
+1. Download stable release for Raspberry Pi. `/srv/seafile/installed# wget https://github.com/haiwen/seafile-rpi/releases/download/v6.0.8/seafile-server_6.0.8_stable_pi.tar.gz`
+1. Create user for seafile. `adduser --system --group --disabled-login --no-create-home --home /srv/seafile --shell /bin/false seafile`
+1. Install prerequisites. `apt-get install python2.7 libpython2.7 python-setuptools python-imaging python-ldap python-urllib3 sqlite3`
+1. Extract the package. `/srv/seafile# tar -xzf /home/pi/seafile/installed/seafile-server_6.0.8_stable_pi.tar.gz`
+1. Make seafile user own everything. `chown -R seafile:seafile /srv/seafile`
+1. Execute initialization script. `/srv/seafile/seafile-server-6.0.8# sudo -u seafile ./setup-seafile.sh`
+1. Install nginx. `apt-get install nginx`
+1. Add file `/etc/nginx/sites-available/seafile.conf` with content:
+
+```
+server {
+    listen 80;
+    server_name seafile.example.com;
+
+    root /var/www/html;
+    location /.well-known {  # do not redirect requests for .well-known location
+        allow all;
+    }
+
+    location / {  # the default location redirects to https
+        return 301 https://$host$request_uri;
+    }
+}
+```
+
+10. Add file `/etc/nginx/sites-available/seafile.ssl.conf` with content:
+
+```
+server {
+    listen 443;
+    server_name seafile.example.com;
+
+    ssl on;
+    ssl_certificate /etc/letsencrypt/live/seafile.example.com/cert.pem;        # path to your cacert.pem
+    ssl_certificate_key /etc/letsencrypt/live/seafile.example.com/privkey.pem;    # path to your privkey.pem
+
+# For further ssl options look into: https://mozilla.github.io/server-side-tls/ssl-config-generator/?server=nginx-1.6.2&openssl=1.0.1t&hsts=yes&profile=intermediate
+
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+
+    # Diffie-Hellman parameter for DHE ciphersuites, recommended 2048 bits
+#    ssl_dhparam /path/to/dhparam.pem;
+
+    # intermediate configuration. tweak to your needs.
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers 'ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS';
+    ssl_prefer_server_ciphers on;
+
+    # HSTS (ngx_http_headers_module is required) (15768000 seconds = 6 months)
+    add_header Strict-Transport-Security max-age=15768000;
+
+    # OCSP Stapling ---
+    # fetch OCSP records from URL in ssl_certificate and cache them
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    ## verify chain of trust of OCSP response using Root CA and Intermediate certs
+    ssl_trusted_certificate /etc/letsencrypt/live/seafile.example.com/fullchain.pem;
+
+#    resolver <IP DNS resolver>;
+# SSL end
+
+    server_tokens off;
+
+    proxy_set_header X-Forwarded-For $remote_addr;
+
+		location / {
+        fastcgi_pass    127.0.0.1:8000;
+        fastcgi_param   SCRIPT_FILENAME     $document_root$fastcgi_script_name;
+        fastcgi_param   PATH_INFO           $fastcgi_script_name;
+
+        fastcgi_param   SERVER_PROTOCOL     $server_protocol;
+        fastcgi_param   QUERY_STRING        $query_string;
+        fastcgi_param   REQUEST_METHOD      $request_method;
+        fastcgi_param   CONTENT_TYPE        $content_type;
+        fastcgi_param   CONTENT_LENGTH      $content_length;
+        fastcgi_param   SERVER_ADDR         $server_addr;
+        fastcgi_param   SERVER_PORT         $server_port;
+        fastcgi_param   SERVER_NAME         $server_name;
+        fastcgi_param   REMOTE_ADDR         $remote_addr;
+        fastcgi_param   HTTPS               on;
+        fastcgi_param   HTTP_SCHEME         https;
+
+        access_log      /var/log/nginx/seahub.access.log;
+        error_log       /var/log/nginx/seahub.error.log;
+        fastcgi_read_timeout 36000;
+        client_max_body_size 0;
+    }
+
+		location /seafhttp {
+        rewrite ^/seafhttp(.*)$ $1 break;
+        proxy_pass http://127.0.0.1:8082;
+        client_max_body_size   0;
+        proxy_connect_timeout  36000s;
+        proxy_read_timeout     36000s;
+        proxy_send_timeout     36000s;
+        send_timeout           36000s;
+    }
+
+    location /media {
+        root /srv/seafile/seafile-server-latest/seahub;
+    }
+}
+```
+
+11. Install certbot. `wget https://dl.eff.org/certbot-auto && chmod a+x certbot-auto && ./certbot-auto`
+1. Prepare nginx if your domain name is long. Add `server_names_hash_bucket_size 64;` to your `/etc/nginx/nginx.conf`.
+1. Activate your http config. `ln -s /etc/nginx/sites-available/seafile.conf /etc/nginx/sites-enabled/seafile.conf && nginx -t && systemctl reload nginx`
+1. Request certificate. `./certbot-auto certonly --webroot -w /var/www/html/ -d seafile.example.com`
+1. Activate your https config. `ln -s /etc/nginx/sites-available/seafile.ssl.conf /etc/nginx/sites-enabled/seafile.ssl.conf && nginx -t && systemctl reload nginx`
+1. Start seafile. `/srv/seafile/seafile-server/latest$ sudo -u seafile ./seafile.sh start && sudo -u seafile ./seahub.sh start-fastcgi`
+
+What remains to be done:
+
+* Let certbot run regularily to refresh certificates.
+* Let certbot run as `letsencrypt` user only.
+* Wrap seahub.sh and seafile.sh in services so they start automatically after reboot.
+* Add DH params file.
+
 ## 2017-02-19 - Changing owncloud from .deb to manual install
 
 On a server I maintain, Owncloud is installed from the Debian repository.
