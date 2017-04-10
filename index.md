@@ -118,7 +118,9 @@ server {
 1. Activate your http config. `ln -s /etc/nginx/sites-available/seafile.conf /etc/nginx/sites-enabled/seafile.conf && nginx -t && systemctl reload nginx`
 1. Request certificate. `./certbot-auto certonly --webroot -w /var/www/html/ -d seafile.example.com`
 1. Activate your https config. `ln -s /etc/nginx/sites-available/seafile.ssl.conf /etc/nginx/sites-enabled/seafile.ssl.conf && nginx -t && systemctl reload nginx`
-1. Start seafile. `/srv/seafile/seafile-server/latest$ sudo -u seafile ./seafile.sh start && sudo -u seafile ./seahub.sh start-fastcgi`
+1. Set `FILE_SERVER_ROOT = 'https://seafile.example.com/seafhttp'` in `/srv/seafile/conf/seahub_settings.py`.
+1. Set `SERVICE_URL = https://seafile.example.net` in `/srv/seafile/conf/ccnet.conf`.
+1. Start seafile. `/srv/seafile/seafile-server-latest$ sudo -u seafile ./seafile.sh start && sudo -u seafile ./seahub.sh start-fastcgi`
 
 What remains to be done:
 
